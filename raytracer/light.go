@@ -87,10 +87,15 @@ func (al *AreaLight) IsEqualTo(al2 *AreaLight) bool {
 }
 
 func (al AreaLight) IntensityAt(p Tuple, w *World) float64 {
+	// NB: use a local jitter sequence that always starts from the beginning of
+	// the light's Jitter numbers, so that the intensity is a pure function of
+	// the inputs. (Sharing the stateful al.Jitter across goroutines would make
+	// the rendered image depend on goroutine scheduling order.)
+	jitter := NewSequence(al.Jitter.Numbers...)
 	total := 0.0
 	for v := 0.0; v < al.VSteps; v++ {
 		for u := 0.0; u < al.USteps; u++ {
-			lightPosition := al.PointOnLight(u, v)
+			lightPosition := al.pointOnLight(u, v, &jitter)
 			if !w.IsShadowed(lightPosition, p) {
 				total += 1.0
 			}
@@ -102,8 +107,16 @@ func (al AreaLight) IntensityAt(p Tuple, w *World) float64 {
 // Returns the real point on the area light based on the u/v coordinates.
 // This places the position of the point randomly based on the Jitter sequence
 // to avoid the banding produced by a uniform position.
+//
+// NB: this consumes the light's shared Jitter sequence. For deterministic
+// results during parallel rendering, see IntensityAt, which uses a local
+// sequence instead.
 func (al *AreaLight) PointOnLight(u, v float64) Tuple {
+	return al.pointOnLight(u, v, al.Jitter)
+}
+
+func (al *AreaLight) pointOnLight(u, v float64, jitter *Sequence) Tuple {
 	return al.Corner.
-		Add(al.UVec.Multiply(u + al.Jitter.Next())).
-		Add(al.VVec.Multiply(v + al.Jitter.Next()))
+		Add(al.UVec.Multiply(u + jitter.Next())).
+		Add(al.VVec.Multiply(v + jitter.Next()))
 }

@@ -34,7 +34,8 @@ var examples map[string]func(bool, int) = map[string]func(bool, int){
 	"Cover":                       func(printProgress bool, jobs int) { RunDrawCover(printProgress, jobs) },
 
 	// Other examples
-	"Animation": func(printProgress bool, jobs int) { RunAnimation(printProgress, jobs) },
+	"Animation":            func(printProgress bool, jobs int) { RunAnimation(printProgress, jobs) },
+	"CameraOrbitAnimation": func(printProgress bool, jobs int) { RunCameraOrbitAnimation(printProgress, jobs) },
 }
 
 func main() {

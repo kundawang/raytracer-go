@@ -91,10 +91,14 @@ func (m *Material) Lighting(obj *Shape, light *AreaLight, point Tuple, eyeVector
 	ambient = effectiveColor.MultiplyColor(m.Ambient)               // Compute the ambient contribution
 
 	samples := []Tuple{}
-	// TODO: can we memoize and abstract this out, with the shared code in IntensityAt()?
+	// NB: use a local jitter sequence that always starts from the beginning of
+	// the light's Jitter numbers, so that lighting is a pure function of the
+	// inputs. (Sharing the stateful light.Jitter across goroutines would make
+	// the rendered image depend on goroutine scheduling order.)
+	jitter := NewSequence(light.Jitter.Numbers...)
 	for v := 0.0; v < light.VSteps; v++ {
 		for u := 0.0; u < light.USteps; u++ {
-			samples = append(samples, light.PointOnLight(u, v))
+			samples = append(samples, light.pointOnLight(u, v, &jitter))
 		}
 	}
 
